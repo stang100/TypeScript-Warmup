@@ -28,6 +28,15 @@ interface Rectangle {
     p2: ps.MousePosition;
     color: Color;
 }
+interface triangleStructure {
+    color: Color | null
+    corner1: number
+    corner2: number
+    corner3: number
+    corner4: number
+    rec: number
+}
+
 
 // A class for our application state and functionality
 class Drawing {
@@ -45,7 +54,14 @@ class Drawing {
     rects: Array <Rectangle>;   // an array that only contains objects that
                                 // satisfy the Rectangle interface
     points: ps.PointSet;
-    
+    rectColor = new Color("blue")
+    alphaVal = 0
+    colurfill = "rgba(0, 0, 255, [[opacity]])";
+    clickEnd: ps.MousePosition | null = null;
+    m: ps.MousePosition | null = null
+    n: ps.MousePosition | null = null
+    randCol: Color | null = null
+    triangleStructure: triangleStructure[] = []
     // a simple wrapper to reliably get the offset within an DOM element
     // We need this because the mouse position in the mouse event is
     // relative to the Window, but we want to specify draw coordinates
@@ -101,21 +117,172 @@ class Drawing {
         // if the mouse is over the canvas, it's position is here, otherwise it's null
         // add code to deal with the mouse position each render frame
         if (this.mousePosition) {
-
+            this.ctx.fillStyle = this.rectColor.string();
+            const m = this.mousePosition
+            this.ctx.fillRect(m.x, m.y, 4, 4);
+        // add code to draw rectangles we have so far at the back
+            if (this.points.length < 30) {
+                this.points.addPoint(this.mousePosition)
+            } else {
+                this.points.dropPoint()
+                this.points.addPoint(this.mousePosition)
+                for (let i = 0; i < 30; i++) {
+        // add code to draw points with the oldest ones more transparent 
+                    this.alphaVal = i / 50
+                    this.ctx.fillStyle = this.colurfill.replace("[[opacity]]", this.alphaVal.toString());
+                    this.ctx.fillRect(this.points.getPoint(i).x, this.points.getPoint(i).y, 4, 4);
+                }
+            }
         } else {
-
         }
 
-        // add code to draw rectangles we have so far at the back
+
+        function recurseTriangleUp(ax: number, ay: number, bx: number, by: number, cx: number, color: Color, count: number, ctx: CanvasRenderingContext2D): void{
+            ctx.beginPath()
+            ctx.moveTo((ax + bx) / 2, (ay + by) / 2)
+            ctx.lineTo((ax + cx) / 2, (ay + by) / 2)
+            ctx.lineTo((bx + cx) / 2, by)
+            ctx.lineTo((ax + bx) / 2, (ay + by) / 2)
+            if (color) {
+                ctx.fillStyle = "" + (color)
+                ctx.fill()
+                ctx.strokeStyle = 'black'
+                ctx.stroke()
+
+            }
+            //console.log(count)
+            if (count > 0) {
+                recurseTriangleUp(ax, ay, (ax + bx) / 2, (ay + by) / 2, (ax + cx) / 2, darken(color), count - 1, ctx);
+                recurseTriangleUp((ax + bx) / 2, (ay + by) / 2, bx, by, (bx + cx) / 2, darken(color), count - 1, ctx);
+                recurseTriangleUp((ax + cx) / 2, (ay + by) / 2, (bx + cx) / 2, by, cx, darken(color), count - 1, ctx);
+            }
+            
+        }
+        function recurseTriangleRight(ax: number, ay: number, bx: number, by: number, cy: number, color: Color, count: number, ctx: CanvasRenderingContext2D): void{
+            ctx.beginPath()
+            ctx.moveTo((ax + bx) / 2, (ay + by) / 2)
+            ctx.lineTo((ax + bx) / 2, (ay + cy) / 2)
+            ctx.lineTo(bx, (cy + by) / 2)
+            ctx.lineTo((ax + bx) / 2, (ay + by) / 2)
+            if (color) {
+                ctx.fillStyle = "" + (color)
+                ctx.fill()
+                ctx.strokeStyle = 'black'
+                ctx.stroke()
+
+            }
+            //console.log(count)
+            if (count > 0) {
+                recurseTriangleRight(ax, ay, (ax + bx) / 2, (ay + by) / 2, (ay + cy) / 2, darken(color), count - 1, ctx);
+                recurseTriangleRight((ax + bx) / 2, (ay + cy) / 2, bx, (cy + by) / 2, cy, darken(color), count - 1, ctx);
+                recurseTriangleRight((ax + bx) / 2, (ay + by) / 2, bx, by, (cy + by) / 2, darken(color), count - 1, ctx);
+            }
+            
+            
+        }
         
 
-
-        // add code to draw points with the oldest ones more transparent 
 
         
 
         // if we've clicked, add code draw the rubber band
         if (this.clickStart) {
+            this.ctx.strokeStyle = "gray"
+            if (this.mousePosition != null) {
+                const m = this.mousePosition
+                this.ctx.strokeRect(this.clickStart.x, this.clickStart.y, m.x - this.clickStart.x, m.y - this.clickStart.y)
+            }
+        }
+        if (this.m && this.n) {
+            const m = this.clickStart
+            const n = this.clickEnd
+            this.ctx.strokeStyle = 'black'
+            this.ctx.strokeRect(this.m.x, this.m.y, this.n.x - this.m.x, this.n.y - this.m.y)
+            this.ctx.beginPath()
+            this.ctx.moveTo(this.m.x, this.m.y)
+            this.ctx.lineTo(this.n.x, this.n.y)
+            this.ctx.stroke()
+            this.ctx.beginPath()
+            this.ctx.moveTo(this.m.x, this.n.y)
+            this.ctx.lineTo(this.n.x, this.m.y)
+            this.ctx.stroke()
+
+            if(this.randCol) {
+                if (this.n.x - this.m.x > this.n.y - this.m.y) {
+                    this.triangleStructure.push({"color": this.randCol, "corner1": this.m.x, "corner2": this.m.y, "corner3": this.n.x, "corner4": this.n.y, "rec": (this.m.y - this.n.y) / 128})
+                } else {
+                    this.triangleStructure.push({"color": this.randCol, "corner1": this.m.x, "corner2": this.m.y, "corner3": this.n.x, "corner4": this.n.y, "rec": (this.m.x - this.n.x) / 128})
+                }
+            }
+            for (let x of this.triangleStructure) {
+                this.ctx.strokeStyle = 'black'
+                this.ctx.strokeRect(x.corner1, x.corner2, x.corner3 - x.corner1, x.corner4 - x.corner2)
+                this.ctx.beginPath()
+                this.ctx.moveTo(x.corner1, x.corner2)
+                this.ctx.lineTo(x.corner3, x.corner4)
+                this.ctx.stroke()
+                this.ctx.beginPath()
+                this.ctx.moveTo(x.corner1, x.corner4)
+                this.ctx.lineTo(x.corner3, x.corner2)
+                this.ctx.stroke()
+                
+                this.ctx.beginPath()
+                this.ctx.moveTo(x.corner1, (x.corner4 - x.corner2) / 2 + x.corner2)
+                this.ctx.lineTo((x.corner1 + ((x.corner1 + x.corner3) / 2 - x.corner1) / 2), x.corner4 - (((x.corner2 + x.corner4) / 2 - x.corner2) / 2))
+                this.ctx.lineTo((x.corner1 + ((x.corner1 + x.corner3) / 2 - x.corner1) / 2), x.corner2 + (((x.corner2 + x.corner4) / 2 - x.corner2) / 2))
+                this.ctx.lineTo(x.corner1, (x.corner4 - x.corner2) / 2 + x.corner2)
+                if (this.randCol) {
+                    this.ctx.fillStyle = "" + x.color
+                    this.ctx.fill()
+                    this.ctx.strokeStyle = 'black'
+                    this.ctx.stroke()
+                }
+
+                this.ctx.beginPath()
+                this.ctx.moveTo(x.corner3, (x.corner2 - x.corner4) / 2 + x.corner4)
+                this.ctx.lineTo((x.corner3 + ((x.corner3 + x.corner1) / 2 - x.corner3) / 2), x.corner2 - (((x.corner4 + x.corner2) / 2 - x.corner4) / 2))
+                this.ctx.lineTo((x.corner3 + ((x.corner3 + x.corner1) / 2 - x.corner3) / 2), x.corner4 + (((x.corner4 + x.corner2) / 2 - x.corner4) / 2))
+                this.ctx.lineTo(x.corner3, (x.corner2 - x.corner4) / 2 + x.corner4)
+                if (this.randCol) {
+                    this.ctx.fillStyle = "" + x.color
+                    this.ctx.fill()
+                    this.ctx.strokeStyle = 'black'
+                    this.ctx.stroke()
+                }
+
+                this.ctx.beginPath()
+                this.ctx.moveTo(x.corner1 + ((x.corner3 - x.corner1) / 2), x.corner2)
+                this.ctx.lineTo((x.corner3 + ((x.corner3 + x.corner1) / 2 - x.corner3) / 2), x.corner2 - (((x.corner4 + x.corner2) / 2 - x.corner4) / 2))
+                this.ctx.lineTo((x.corner1 + ((x.corner1 + x.corner3) / 2 - x.corner1) / 2), x.corner2 + (((x.corner2 + x.corner4) / 2 - x.corner2) / 2))
+                this.ctx.lineTo(x.corner1 + ((x.corner3 - x.corner1) / 2), x.corner2)
+                if (this.randCol) {
+                    this.ctx.fillStyle = "" + x.color
+                    this.ctx.fill()
+                    this.ctx.strokeStyle = 'black'
+                    this.ctx.stroke()
+                }
+                this.ctx.beginPath()
+                this.ctx.moveTo(x.corner3 + ((x.corner1 - x.corner3) / 2), x.corner4)
+                this.ctx.lineTo((x.corner1 + ((x.corner1 + x.corner3) / 2 - x.corner1) / 2), x.corner4 - (((x.corner2 + x.corner4) / 2 - x.corner2) / 2))
+                this.ctx.lineTo((x.corner3 + ((x.corner3 + x.corner1) / 2 - x.corner3) / 2), x.corner4 + (((x.corner4 + x.corner2) / 2 - x.corner4) / 2))
+                this.ctx.lineTo(x.corner3 + ((x.corner1 - x.corner3) / 2), x.corner4)
+                if (this.randCol) {
+                    this.ctx.fillStyle = "" + x.color
+                    this.ctx.fill()
+                    this.ctx.strokeStyle = 'black'
+                    this.ctx.stroke()
+                }
+                if (x.color) {
+                    recurseTriangleUp((x.corner1 + x.corner3) / 2, (x.corner2 + x.corner4) / 2, x.corner3, x.corner2, x.corner1, x.color, x.rec - 1, this.ctx)
+                    recurseTriangleUp((x.corner1 + x.corner3) / 2, (x.corner2 + x.corner4) / 2, x.corner1, x.corner4, x.corner3, (x.color), x.rec - 1, this.ctx);
+                    recurseTriangleRight((x.corner1 + x.corner3) / 2, (x.corner2 + x.corner4) / 2, x.corner1, x.corner2, x.corner4, (x.color), x.rec - 1, this.ctx)
+                    recurseTriangleRight((x.corner1 + x.corner3) / 2, (x.corner2 + x.corner4) / 2, x.corner3, x.corner4, x.corner2, (x.color), x.rec - 1, this.ctx)
+                }
+
+                
+                
+            }
+            
 
         }
 
@@ -136,7 +303,7 @@ class Drawing {
 
         canv.onmousedown = (ev: MouseEvent) => {
             // this method is called when a mouse button is pressed.
-            var mousePosition = Drawing.offset(ev);   
+            var mousePosition = Drawing.offset(ev);
             this.clickStart = mousePosition        
             this.mousePosition = mousePosition
         }
@@ -147,6 +314,11 @@ class Drawing {
 
             // **** TODO *****
             // add code here to react to mouse up events
+            this.randCol = randomColor()
+            this.m = clickEnd
+            this.n = this.clickStart
+            this.clickStart = null;
+            this.clickEnd = clickEnd
         }
         
         canv.onmousemove = (ev: MouseEvent) => {
