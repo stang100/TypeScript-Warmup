@@ -137,15 +137,12 @@ class Drawing {
         }
 
 
-        function recurseTriangleUp(mx: number, my: number, nx: number, cx: number, cy: number, color: Color, count: number, ctx: CanvasRenderingContext2D): void{
-            if (count > 0) {
-                recurseTriangleUp(mx, my, cx, mx + (cx - mx) / 2, my + (cy - my) / 2, darken(color), count - 1, ctx);
-            }
+        function recurseTriangleUp(ax: number, ay: number, bx: number, by: number, cx: number, color: Color, count: number, ctx: CanvasRenderingContext2D): void{
             ctx.beginPath()
-            ctx.moveTo(cx, my)
-            ctx.lineTo(mx + (cx - mx) / 2, my + (cy - my) / 2)
-            ctx.lineTo(mx + (nx - cx) / 2, my + (cy - my) / 2)
-            ctx.moveTo(cx, my)
+            ctx.moveTo((ax + bx) / 2, (ay + by) / 2)
+            ctx.lineTo((ax + cx) / 2, (ay + by) / 2)
+            ctx.lineTo((bx + cx) / 2, by)
+            ctx.lineTo((ax + bx) / 2, (ay + by) / 2)
             if (color) {
                 ctx.fillStyle = "" + (color)
                 ctx.fill()
@@ -153,48 +150,35 @@ class Drawing {
                 ctx.stroke()
 
             }
-        }
-        const recurseTriangleDown = (corner1: number, corner2: number, corner3: number, color: Color, count: number) => {
-            this.ctx.beginPath()
-            this.ctx.moveTo(corner1 + ((corner3 - corner1) / 2), corner2)
-            this.ctx.lineTo((corner3 + ((corner3 + corner1) / 2 - corner3) / 2), corner2 - (((corner4 + corner2) / 2 - corner4) / 2))
-            this.ctx.lineTo((corner1 + ((corner1 + corner3) / 2 - corner1) / 2), corner2 + (((corner2 + corner4) / 2 - corner2) / 2))
-            this.ctx.lineTo(corner1 + ((corner3 - corner1) / 2), corner2)
-            if (this.randCol) {
-                this.ctx.fillStyle = "" + darken(color)
-                this.ctx.fill()
-                this.ctx.strokeStyle = 'black'
-                this.ctx.stroke()
-            }
-        }
-        const recurseTriangleLeft = (corner1x: number, corner1y: number, corner2x: number, corner2y: number, corner3x: number, corner3y: number, color: Color, count: number) => {
+            //console.log(count)
             if (count > 0) {
-                recurseTriangleLeft(corner1x, corner1y, corner1x + (corner2x - corner1x) / 2, corner1y + (corner3y - corner1y) / 2, corner1x + (corner2x - corner1x) / 2, corner1y + (corner3y - corner1y) / 4, darken(color), count - 1)
+                recurseTriangleUp(ax, ay, (ax + bx) / 2, (ay + by) / 2, (ax + cx) / 2, darken(color), count - 1, ctx);
+                recurseTriangleUp((ax + bx) / 2, (ay + by) / 2, bx, by, (bx + cx) / 2, darken(color), count - 1, ctx);
+                recurseTriangleUp((ax + cx) / 2, (ay + by) / 2, (bx + cx) / 2, by, cx, darken(color), count - 1, ctx);
             }
-            this.ctx.beginPath()
-            this.ctx.moveTo(corner1x + (corner3x - corner1x) / 4, corner1y + (corner2y - corner1y) / 2)
-            this.ctx.lineTo(corner1x + (corner3x - corner1x) / 2, corner1y + (corner2y - corner1y) / 2)
-            this.ctx.lineTo(corner1x + 3 * (corner3x - corner1x) / 4, corner1y + (corner2y - corner1y) / 2)
-            this.ctx.moveTo(corner1x + (corner3x - corner1x) / 4, corner1y + (corner2y - corner1y) / 2)
-            if (color) {
-                this.ctx.fillStyle = "" + (color)
-                this.ctx.fill()
-                this.ctx.strokeStyle = 'black'
-                this.ctx.stroke()
-            }
+            
         }
-        const recurseTriangleRight = (corner1: number, corner2: number, corner3: number, color: Color, count: number) => {
-            this.ctx.beginPath()
-            this.ctx.moveTo(corner3, (corner2 - corner4) / 2 + corner4)
-            this.ctx.lineTo((corner3 + ((corner3 + corner1) / 2 - corner3) / 2), corner2 - (((corner4 + corner2) / 2 - corner4) / 2))
-            this.ctx.lineTo((corner3 + ((corner3 + corner1) / 2 - corner3) / 2), corner4 + (((corner4 + corner2) / 2 - corner4) / 2))
-            this.ctx.lineTo(corner3, (corner2 - corner4) / 2 + corner4)
-            if (this.randCol) {
-                this.ctx.fillStyle = "" + darken(color)
-                this.ctx.fill()
-                this.ctx.strokeStyle = 'black'
-                this.ctx.stroke()
+        function recurseTriangleRight(ax: number, ay: number, bx: number, by: number, cy: number, color: Color, count: number, ctx: CanvasRenderingContext2D): void{
+            ctx.beginPath()
+            ctx.moveTo((ax + bx) / 2, (ay + by) / 2)
+            ctx.lineTo((ax + bx) / 2, (ay + cy) / 2)
+            ctx.lineTo(bx, (cy + by) / 2)
+            ctx.lineTo((ax + bx) / 2, (ay + by) / 2)
+            if (color) {
+                ctx.fillStyle = "" + (color)
+                ctx.fill()
+                ctx.strokeStyle = 'black'
+                ctx.stroke()
+
             }
+            //console.log(count)
+            if (count > 0) {
+                recurseTriangleRight(ax, ay, (ax + bx) / 2, (ay + by) / 2, (ay + cy) / 2, darken(color), count - 1, ctx);
+                recurseTriangleRight((ax + bx) / 2, (ay + cy) / 2, bx, (cy + by) / 2, cy, darken(color), count - 1, ctx);
+                recurseTriangleRight((ax + bx) / 2, (ay + by) / 2, bx, by, (cy + by) / 2, darken(color), count - 1, ctx);
+            }
+            
+            
         }
         
 
@@ -225,9 +209,9 @@ class Drawing {
 
             if(this.randCol) {
                 if (this.n.x - this.m.x > this.n.y - this.m.y) {
-                    this.triangleStructure.push({"color": this.randCol, "corner1": this.m.x, "corner2": this.m.y, "corner3": this.n.x, "corner4": this.n.y, "rec": (this.n.y - this.m.y) % 128})
+                    this.triangleStructure.push({"color": this.randCol, "corner1": this.m.x, "corner2": this.m.y, "corner3": this.n.x, "corner4": this.n.y, "rec": (this.m.y - this.n.y) / 128})
                 } else {
-                    this.triangleStructure.push({"color": this.randCol, "corner1": this.m.x, "corner2": this.m.y, "corner3": this.n.x, "corner4": this.n.y, "rec": this.n.x - this.m.x})
+                    this.triangleStructure.push({"color": this.randCol, "corner1": this.m.x, "corner2": this.m.y, "corner3": this.n.x, "corner4": this.n.y, "rec": (this.m.x - this.n.x) / 128})
                 }
             }
             for (let x of this.triangleStructure) {
@@ -289,11 +273,10 @@ class Drawing {
                     this.ctx.stroke()
                 }
                 if (x.color) {
-                    recurseTriangleLeft(x.corner1, x.corner2, x.corner1 + (x.corner3 - x.corner1) / 2, x.corner2 + (x.corner4 - x.corner2) / 2, x.corner1, x.corner4, x.color, x.rec)
-                }
-                if (x.color) {
-                    //recurseTriangleUp(x.corner1, x.corner2, x.corner3, (x.corner1 + x.corner3) / 2, (x.corner2 + x.corner4) / 2, x.color, x.rec, this.ctx)
-                    //recurseTriangleUp(x.corner1, x.corner2, (x.corner1 + x.corner3) / 2, x.corner2, x.corner1 + ((x.corner1 + x.corner3) / 2 - x.corner1) / 2, darken(x.color), x.rec - 1, this.ctx);
+                    recurseTriangleUp((x.corner1 + x.corner3) / 2, (x.corner2 + x.corner4) / 2, x.corner3, x.corner2, x.corner1, x.color, x.rec - 1, this.ctx)
+                    recurseTriangleUp((x.corner1 + x.corner3) / 2, (x.corner2 + x.corner4) / 2, x.corner1, x.corner4, x.corner3, (x.color), x.rec - 1, this.ctx);
+                    recurseTriangleRight((x.corner1 + x.corner3) / 2, (x.corner2 + x.corner4) / 2, x.corner1, x.corner2, x.corner4, (x.color), x.rec - 1, this.ctx)
+                    recurseTriangleRight((x.corner1 + x.corner3) / 2, (x.corner2 + x.corner4) / 2, x.corner3, x.corner4, x.corner2, (x.color), x.rec - 1, this.ctx)
                 }
 
                 
